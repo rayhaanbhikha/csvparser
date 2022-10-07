@@ -1,4 +1,4 @@
-module github.com/rayhaanbhikha/csv_parser
+module github.com/rayhaanbhikha/csvparser
 
 go 1.18
 
