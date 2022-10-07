@@ -47,7 +47,9 @@ func normalParse(csvReader *csv.Reader) ([]*csvRowStruct, error) {
 			case "name":
 				csvRow.Name = colVal
 			case "age":
-				csvRow.Age = &colVal
+				if colVal != "" {
+					csvRow.Age = &colVal
+				}
 			case "sex":
 				csvRow.Sex = colVal
 			}
