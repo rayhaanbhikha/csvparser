@@ -9,10 +9,6 @@ import (
 	"strings"
 )
 
-func stringPty(val string) *string {
-	return &val
-}
-
 func Parse[T any](csvReader *csv.Reader, csvRow T) ([]T, error) {
 	headerIndexMap := make(map[string]int)
 	csvRowType := reflect.TypeOf(csvRow)
@@ -72,16 +68,15 @@ func Parse[T any](csvReader *csv.Reader, csvRow T) ([]T, error) {
 				continue
 			}
 
+			valToSet := reflect.ValueOf(colVal)
 			// TODO: should we have additional safe guards before attempting to set the value?
 			if csvRowPtrField.Kind() == reflect.Pointer {
 				if colVal == "" {
 					continue
 				}
-				clv := reflect.ValueOf(stringPty(colVal))
-				csvRowPtrField.Set(clv)
-			} else {
-				csvRowPtrField.SetString(colVal)
+				valToSet = reflect.ValueOf(&colVal)
 			}
+			csvRowPtrField.Set(valToSet)
 		}
 		v, ok := csvRowPtr.Elem().Interface().(T)
 		if !ok {
