@@ -2,7 +2,7 @@ package csvparser_test
 
 import (
 	"encoding/csv"
-	csvparser "github.com/rayhaanbhikha/csv_parser"
+	"github.com/rayhaanbhikha/csvparser"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
