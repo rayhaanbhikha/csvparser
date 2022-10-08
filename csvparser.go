@@ -9,18 +9,46 @@ import (
 	"strings"
 )
 
-func Parse[T any](csvReader *csv.Reader, csvRow T) ([]T, error) {
-	headerIndexMap := make(map[string]int)
-	csvRowType := reflect.TypeOf(csvRow)
-	csvRows := make([]T, 0)
+type csvHeaders struct {
+	headersByIndex map[string]int
+}
 
-	if csvRowType == nil {
-		return nil, errors.New("csvRow cannot be nil")
+var ErrCSVRowMustBeAStruct = errors.New("csvRow value must be a struct")
+var ErrCSVRowHasInvalidValue = errors.New("csvRow has invalid value")
+
+func newCSVHeaders(headers []string) *csvHeaders {
+	headersByIndex := make(map[string]int)
+	for i, headerCol := range headers {
+		// what happens if we have 2 indexes pointing to the same column?
+		headersByIndex[headerCol] = i
 	}
+	return &csvHeaders{headersByIndex: headersByIndex}
+}
+
+func (c *csvHeaders) get(header string) (int, bool) {
+	index, ok := c.headersByIndex[header]
+	return index, ok
+}
+
+func Parse[T any](csvReader *csv.Reader, csvRow T) ([]T, error) {
+	csvRowValue := reflect.ValueOf(csvRow)
+
+	// TODO: maybe we allow pointers?
+	//if csvRowType.Kind() != reflect.Pointer {
+	//	return nil, ErrCSVRowMustBeAPointer
+	//}
+	if !csvRowValue.IsValid() {
+		return nil, ErrCSVRowHasInvalidValue
+	}
+
+	csvRowType := csvRowValue.Type()
 
 	if csvRowType.Kind() != reflect.Struct {
-		return nil, errors.New("csvRow must be a struct")
+		return nil, ErrCSVRowMustBeAStruct
 	}
+
+	var csvHeaders *csvHeaders
+	csvRows := make([]T, 0)
 
 	for {
 		row, err := csvReader.Read()
@@ -31,61 +59,68 @@ func Parse[T any](csvReader *csv.Reader, csvRow T) ([]T, error) {
 			return nil, err
 		}
 
-		if len(headerIndexMap) == 0 {
-			for i, headerCol := range row {
-				// what happens if we have 2 indexes pointing to the same column?
-				headerIndexMap[headerCol] = i
-			}
+		if csvHeaders == nil {
+			csvHeaders = newCSVHeaders(row)
 			continue
 		}
 
-		csvRowPtr := reflect.New(csvRowType)
-
-		for i := 0; i < csvRowType.NumField(); i++ {
-			structField := csvRowType.Field(i)
-			if !structField.IsExported() {
-				continue
-			}
-
-			omitEmptyFlagSet := false
-			columnName := structField.Name
-			if structField.Tag != "" {
-				columnName, omitEmptyFlagSet = parseTag(structField.Tag)
-			}
-
-			colIndex, ok := headerIndexMap[columnName]
-			if !ok || (colIndex > len(row)) {
-				continue
-			}
-
-			colVal := row[colIndex]
-			if colVal == "" && omitEmptyFlagSet {
-				continue
-			}
-
-			csvRowPtrField := csvRowPtr.Elem().Field(i)
-			if !csvRowPtrField.CanSet() {
-				continue
-			}
-
-			valToSet := reflect.ValueOf(colVal)
-			// TODO: should we have additional safe guards before attempting to set the value?
-			if csvRowPtrField.Kind() == reflect.Pointer {
-				if colVal == "" {
-					continue
-				}
-				valToSet = reflect.ValueOf(&colVal)
-			}
-			csvRowPtrField.Set(valToSet)
+		csvRowPtr, err := parseRow(csvRowType, csvHeaders, row)
+		if err != nil {
+			return nil, err
 		}
+
 		v, ok := csvRowPtr.Elem().Interface().(T)
 		if !ok {
 			return nil, fmt.Errorf("failed to map csvRow to type %T", csvRowType)
 		}
+
 		csvRows = append(csvRows, v)
 	}
 
 	return csvRows, nil
+}
+
+func parseRow(csvRowType reflect.Type, csvHeaders *csvHeaders, row []string) (reflect.Value, error) {
+	csvRowPtr := reflect.New(csvRowType)
+
+	for i := 0; i < csvRowType.NumField(); i++ {
+		structField := csvRowType.Field(i)
+		if !structField.IsExported() {
+			continue
+		}
+
+		omitEmptyFlagSet := false
+		columnName := structField.Name
+		if structField.Tag != "" {
+			columnName, omitEmptyFlagSet = parseTag(structField.Tag)
+		}
+
+		colIndex, ok := csvHeaders.get(columnName)
+		if !ok || (colIndex > len(row)) {
+			continue
+		}
+
+		colVal := row[colIndex]
+		if colVal == "" && omitEmptyFlagSet {
+			continue
+		}
+
+		csvRowPtrField := csvRowPtr.Elem().Field(i)
+		if !csvRowPtrField.CanSet() {
+			continue
+		}
+
+		valToSet := reflect.ValueOf(colVal)
+		// TODO: should we have additional safe guards before attempting to set the value?
+		if csvRowPtrField.Kind() == reflect.Pointer {
+			if colVal == "" {
+				continue
+			}
+			valToSet = reflect.ValueOf(&colVal)
+		}
+		csvRowPtrField.Set(valToSet)
+	}
+	return csvRowPtr, nil
 }
 
 func parseTag(tag reflect.StructTag) (string, bool) {
