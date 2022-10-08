@@ -5,24 +5,34 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
-	"os"
+	"strings"
 	"testing"
 )
 
-func Test_normalParse(t *testing.T) {
-	file, err := os.Open("./data/sample_csv")
-	require.NoError(t, err)
+type csvRowStruct struct {
+	Name   string  `csv_header:"name"`
+	Age    *string `csv_header:"age"`
+	Gender string  `csv_header:"gender"`
+}
 
-	csvReader := csv.NewReader(file)
+var controlMockCSVData = strings.NewReader(`name,age,gender
+john,30,male
+Rob,40,male
+victoria,25,female
+lizzy,,
+alicia,,female`)
+
+func Test_normalParse(t *testing.T) {
+	csvReader := csv.NewReader(controlMockCSVData)
 	results, err := normalParse(csvReader)
 	require.NoError(t, err)
 
 	expectedResults := []*csvRowStruct{
-		{Name: "john", Age: stringPty("30"), Sex: "male"},
-		{Name: "Rob", Age: stringPty("40"), Sex: "male"},
-		{Name: "victoria", Age: stringPty("25"), Sex: "female"},
+		{Name: "john", Age: stringPty("30"), Gender: "male"},
+		{Name: "Rob", Age: stringPty("40"), Gender: "male"},
+		{Name: "victoria", Age: stringPty("25"), Gender: "female"},
 		{Name: "lizzy"},
-		{Name: "alicia", Sex: "female"},
+		{Name: "alicia", Gender: "female"},
 	}
 
 	assert.ElementsMatch(t, expectedResults, results)
@@ -57,8 +67,8 @@ func normalParse(csvReader *csv.Reader) ([]*csvRowStruct, error) {
 				if colVal != "" {
 					csvRow.Age = &colVal
 				}
-			case "sex":
-				csvRow.Sex = colVal
+			case "gender":
+				csvRow.Gender = colVal
 			}
 		}
 		csvRows = append(csvRows, csvRow)
