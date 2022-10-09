@@ -1,7 +1,6 @@
 package csvparser
 
 import (
-	"errors"
 	"reflect"
 	"strings"
 )
@@ -71,7 +70,7 @@ func rowMapper(rowVal reflect.Value, headers *csvHeaders) (*csvRowMapper, error)
 		}
 
 		if !isKind(structField.Type, reflect.String) {
-			return nil, errors.New("expected field type to be string or *string")
+			return nil, ErrCSVRowMappingInvalidField
 		}
 
 		columnName := structField.Name

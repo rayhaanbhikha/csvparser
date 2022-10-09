@@ -8,44 +8,81 @@ import (
 )
 
 func Parse[T any](csvReader *csv.Reader, csvRowMapping T) ([]T, error) {
-	rowMappingVal := reflect.ValueOf(csvRowMapping)
-	isPointer := rowMappingVal.Kind() == reflect.Pointer
 	csvRows := make([]T, 0)
-	csvHeaders, err := newCSVHeaders(csvReader)
-	if err == io.EOF {
-		return csvRows, nil
+	for parsedResult := range ParseChan(csvReader, csvRowMapping) {
+		if parsedResult.Error != nil {
+			return nil, parsedResult.Error
+		}
+		csvRows = append(csvRows, parsedResult.Row)
 	}
-	if err != nil {
-		return nil, err
-	}
+	return csvRows, nil
+}
 
-	csvRowMapper, err := rowMapper(rowMappingVal, csvHeaders)
-	if err != nil {
-		return nil, err
-	}
+type ParseChanResult[T any] struct {
+	Row   T
+	Error error
+}
 
-	for {
-		row, err := csvReader.Read()
+func ParseChan[T any](csvReader *csv.Reader, csvRowMapping T) <-chan ParseChanResult[T] {
+	resultChan := make(chan ParseChanResult[T])
+
+	go func() {
+		defer close(resultChan)
+		rowMappingVal := reflect.ValueOf(csvRowMapping)
+		isPointer := rowMappingVal.Kind() == reflect.Pointer
+
+		csvHeaders, err := newCSVHeaders(csvReader)
 		if err == io.EOF {
-			break
+			return
 		}
 		if err != nil {
-			return nil, err
+			resultChan <- ParseChanResult[T]{
+				Error: err,
+			}
+			return
 		}
 
-		csvRowPtr := csvRowMapper.generate(row)
-
-		if !isPointer {
-			csvRowPtr = csvRowPtr.Elem()
+		csvRowMapper, err := rowMapper(rowMappingVal, csvHeaders)
+		if err != nil {
+			resultChan <- ParseChanResult[T]{
+				Error: err,
+			}
+			return
 		}
 
-		v, ok := csvRowPtr.Interface().(T)
-		if !ok {
-			return nil, fmt.Errorf("failed to map from %T to %T", csvRowPtr.Elem().Interface(), rowMappingVal.Type())
+		for {
+			row, err := csvReader.Read()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				resultChan <- ParseChanResult[T]{
+					Error: err,
+				}
+				continue
+			}
+
+			csvRowPtr := csvRowMapper.generate(row)
+
+			if !isPointer {
+				csvRowPtr = csvRowPtr.Elem()
+			}
+
+			v, ok := csvRowPtr.Interface().(T)
+			if !ok {
+				resultChan <- ParseChanResult[T]{
+					Error: fmt.Errorf("failed to map from %T to %T", csvRowPtr.Elem().Interface(), rowMappingVal.Type()),
+				}
+				continue
+			}
+
+			resultChan <- ParseChanResult[T]{
+				Row: v,
+			}
 		}
 
-		csvRows = append(csvRows, v)
-	}
+		return
+	}()
 
-	return csvRows, nil
+	return resultChan
 }

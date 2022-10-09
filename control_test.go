@@ -35,9 +35,9 @@ func Test_normalParse(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedResults := []*csvRowStruct{
-		{Name: "john", Age: stringPty("30"), Gender: "male"},
-		{Name: "Rob", Age: stringPty("40"), Gender: "male"},
-		{Name: "victoria", Age: stringPty("25"), Gender: "female"},
+		{Name: "john", Age: pointy("30"), Gender: "male"},
+		{Name: "Rob", Age: pointy("40"), Gender: "male"},
+		{Name: "victoria", Age: pointy("25"), Gender: "female"},
 		{Name: "lizzy"},
 		{Name: "alicia", Gender: "female"},
 	}

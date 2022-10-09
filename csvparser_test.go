@@ -10,6 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func pointy[T any](val T) *T {
+	return &val
+}
+
 // FIXME: use strings.NewReader instead of opening files.
 func TestParse(t1 *testing.T) {
 
@@ -50,12 +54,40 @@ func TestParse(t1 *testing.T) {
 			{Name: "john", Age: pointy("30"), Gender: "male"},
 			{Name: "Rob", Age: pointy("40"), Gender: "male"},
 			{Name: "victoria", Age: pointy("25"), Gender: "female"},
-			{Name: "lizzy"},
+			{Name: "lizzy", Gender: ""},
 			{Name: "alicia", Gender: "female"},
 		}
 
 		assert.ElementsMatch(t, expected, got)
+	})
 
+	t1.Run("should return expected rows", func(t *testing.T) {
+
+		type Row struct {
+			Name   string  `csv_header:"name"`
+			Age    *string `csv_header:"age"`
+			Gender string  `csv_header:"gender"`
+		}
+
+		csvReader := csv.NewReader(mockCSVData())
+		parsedResultChan := csvparser.ParseChan[*Row](csvReader, &Row{})
+		csvRows := make([]*Row, 0)
+		for parsedResult := range parsedResultChan {
+			if parsedResult.Error != nil {
+				require.NoError(t, parsedResult.Error)
+			}
+			csvRows = append(csvRows, parsedResult.Row)
+		}
+
+		expected := []*Row{
+			{Name: "john", Age: pointy("30"), Gender: "male"},
+			{Name: "Rob", Age: pointy("40"), Gender: "male"},
+			{Name: "victoria", Age: pointy("25"), Gender: "female"},
+			{Name: "lizzy", Gender: ""},
+			{Name: "alicia", Gender: "female"},
+		}
+
+		assert.ElementsMatch(t, expected, csvRows)
 	})
 
 	t1.Run("should return error if v is an empty interface", func(t *testing.T) {
