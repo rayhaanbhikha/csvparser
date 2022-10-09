@@ -9,7 +9,7 @@ import (
 
 func Parse[T any](csvReader *csv.Reader, csvRowMapping T) ([]T, error) {
 	rowMappingVal := reflect.ValueOf(csvRowMapping)
-
+	isPointer := rowMappingVal.Kind() == reflect.Pointer
 	csvRows := make([]T, 0)
 	csvHeaders, err := newCSVHeaders(csvReader)
 	if err == io.EOF {
@@ -35,9 +35,13 @@ func Parse[T any](csvReader *csv.Reader, csvRowMapping T) ([]T, error) {
 
 		csvRowPtr := csvRowMapper.generate(row)
 
-		v, ok := csvRowPtr.Elem().Interface().(T)
+		if !isPointer {
+			csvRowPtr = csvRowPtr.Elem()
+		}
+
+		v, ok := csvRowPtr.Interface().(T)
 		if !ok {
-			return nil, fmt.Errorf("failed to map csvRow to type %T", rowMappingVal.Type())
+			return nil, fmt.Errorf("failed to map from %T to %T", csvRowPtr.Elem().Interface(), rowMappingVal.Type())
 		}
 
 		csvRows = append(csvRows, v)

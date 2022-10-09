@@ -55,17 +55,16 @@ func rowMapper(rowVal reflect.Value, headers *csvHeaders) (*csvRowMapper, error)
 		return nil, ErrCSVRowHasInvalidValue
 	}
 
-	rowType := rowVal.Type()
-
-	// todo should this be a pointer?
-	if rowType.Kind() != reflect.Struct {
+	underlyingStruct, err := extractStruct(rowVal)
+	if err != nil {
 		return nil, ErrCSVRowMustBeAStruct
 	}
+	underlyingStructType := underlyingStruct.Type()
 
-	csvRowType := newCSVRowType(rowType)
+	csvRowType := newCSVRowType(underlyingStructType)
 
-	for i := 0; i < rowType.NumField(); i++ {
-		structField := rowType.Field(i)
+	for i := 0; i < underlyingStructType.NumField(); i++ {
+		structField := underlyingStructType.Field(i)
 
 		if !structField.IsExported() {
 			continue
