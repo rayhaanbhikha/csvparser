@@ -2,6 +2,7 @@ package csvparser_test
 
 import (
 	"encoding/csv"
+	"fmt"
 	"github.com/rayhaanbhikha/csvparser"
 	"os"
 	"testing"
@@ -22,6 +23,7 @@ func BenchmarkParse(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, err := csvparser.Parse(csvReader, Row{})
 		if err != nil {
+			fmt.Println(err)
 			b.FailNow()
 		}
 	}

@@ -2,20 +2,13 @@ package csvparser_test
 
 import (
 	"encoding/csv"
+	"fmt"
 	"github.com/rayhaanbhikha/csvparser"
 	"github.com/stretchr/testify/assert"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
-
-var mockCSVData = strings.NewReader(`name,age,gender
-john,30,male
-Rob,40,male
-victoria,25,female
-lizzy,,
-alicia,,female`)
 
 // FIXME: use strings.NewReader instead of opening files.
 func TestParse(t1 *testing.T) {
@@ -37,26 +30,30 @@ func TestParse(t1 *testing.T) {
 			{Name: "lizzy"},
 			{Name: "alicia", Gender: "female"},
 		}
+
 		assert.ElementsMatch(t, expected, got)
 	})
 
 	t1.Run("should return error if v is an empty interface", func(t *testing.T) {
 		var v any
 		csvReader := csv.NewReader(mockCSVData)
-		_, err := csvparser.Parse(csvReader, &v)
+		res, err := csvparser.Parse(csvReader, &v)
+		fmt.Println(res)
 		require.Error(t, err, csvparser.ErrCSVRowMustBeAStruct)
 	})
 
 	t1.Run("should return error if v is an empty interface", func(t *testing.T) {
 		var v any
 		csvReader := csv.NewReader(mockCSVData)
-		_, err := csvparser.Parse(csvReader, &v)
+		res, err := csvparser.Parse(csvReader, &v)
+		fmt.Println(res)
 		require.Error(t, err, csvparser.ErrCSVRowMustBeAStruct)
 	})
 
 	t1.Run("should return error if v is a string", func(t *testing.T) {
 		csvReader := csv.NewReader(mockCSVData)
-		_, err := csvparser.Parse(csvReader, "some string")
+		res, err := csvparser.Parse(csvReader, "some string")
+		fmt.Println(res)
 		require.Error(t, err, csvparser.ErrCSVRowMustBeAStruct)
 	})
 
@@ -64,7 +61,8 @@ func TestParse(t1 *testing.T) {
 		var c any
 
 		csvReader := csv.NewReader(mockCSVData)
-		_, err := csvparser.Parse(csvReader, c)
+		res, err := csvparser.Parse(csvReader, c)
+		fmt.Println(res)
 		require.Error(t, err, csvparser.ErrCSVRowHasInvalidValue)
 	})
 

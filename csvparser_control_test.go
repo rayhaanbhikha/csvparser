@@ -5,7 +5,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
-	"strings"
 	"testing"
 )
 
@@ -15,15 +14,8 @@ type csvRowStruct struct {
 	Gender string  `csv_header:"gender"`
 }
 
-var controlMockCSVData = strings.NewReader(`name,age,gender
-john,30,male
-Rob,40,male
-victoria,25,female
-lizzy,,
-alicia,,female`)
-
 func Test_normalParse(t *testing.T) {
-	csvReader := csv.NewReader(controlMockCSVData)
+	csvReader := csv.NewReader(mockCSVData)
 	results, err := normalParse(csvReader)
 	require.NoError(t, err)
 
