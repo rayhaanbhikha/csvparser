@@ -2,6 +2,7 @@ package csvparser_test
 
 import (
 	"encoding/csv"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -14,8 +15,22 @@ type csvRowStruct struct {
 	Gender string  `csv_header:"gender"`
 }
 
+func BenchmarkNormalParse(b *testing.B) {
+	csvReader := csv.NewReader(mockCSVData())
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := normalParse(csvReader)
+		if err != nil {
+			fmt.Println(err)
+			b.FailNow()
+		}
+	}
+	b.StopTimer()
+}
+
 func Test_normalParse(t *testing.T) {
-	csvReader := csv.NewReader(mockCSVData)
+	csvReader := csv.NewReader(mockCSVData())
 	results, err := normalParse(csvReader)
 	require.NoError(t, err)
 

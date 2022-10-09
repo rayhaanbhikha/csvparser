@@ -7,8 +7,8 @@ import (
 	"reflect"
 )
 
-func Parse[T any](csvReader *csv.Reader, csvRow T) ([]T, error) {
-	csvRowValue := reflect.ValueOf(csvRow)
+func Parse[T any](csvReader *csv.Reader, csvRowMapping T) ([]T, error) {
+	rowMappingVal := reflect.ValueOf(csvRowMapping)
 
 	csvRows := make([]T, 0)
 	csvHeaders, err := newCSVHeaders(csvReader)
@@ -19,7 +19,7 @@ func Parse[T any](csvReader *csv.Reader, csvRow T) ([]T, error) {
 		return nil, err
 	}
 
-	csvRowType, err := parseType(csvRowValue, csvHeaders)
+	csvRowMapper, err := rowMapper(rowMappingVal, csvHeaders)
 	if err != nil {
 		return nil, err
 	}
@@ -33,11 +33,11 @@ func Parse[T any](csvReader *csv.Reader, csvRow T) ([]T, error) {
 			return nil, err
 		}
 
-		csvRowPtr := csvRowType.generate(csvRowValue.Type(), row)
+		csvRowPtr := csvRowMapper.generate(row)
 
 		v, ok := csvRowPtr.Elem().Interface().(T)
 		if !ok {
-			return nil, fmt.Errorf("failed to map csvRow to type %T", csvRowType)
+			return nil, fmt.Errorf("failed to map csvRow to type %T", rowMappingVal.Type())
 		}
 
 		csvRows = append(csvRows, v)

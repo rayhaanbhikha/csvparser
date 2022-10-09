@@ -20,7 +20,7 @@ func TestParse(t1 *testing.T) {
 			Gender string  `csv_header:"gender"`
 		}
 
-		csvReader := csv.NewReader(mockCSVData)
+		csvReader := csv.NewReader(mockCSVData())
 		got, err := csvparser.Parse[Row](csvReader, Row{})
 		require.NoError(t, err)
 		expected := []Row{
@@ -36,22 +36,20 @@ func TestParse(t1 *testing.T) {
 
 	t1.Run("should return error if v is an empty interface", func(t *testing.T) {
 		var v any
-		csvReader := csv.NewReader(mockCSVData)
-		res, err := csvparser.Parse(csvReader, &v)
-		fmt.Println(res)
+		csvReader := csv.NewReader(mockCSVData())
+		_, err := csvparser.Parse(csvReader, &v)
 		require.Error(t, err, csvparser.ErrCSVRowMustBeAStruct)
 	})
 
 	t1.Run("should return error if v is an empty interface", func(t *testing.T) {
 		var v any
-		csvReader := csv.NewReader(mockCSVData)
-		res, err := csvparser.Parse(csvReader, &v)
-		fmt.Println(res)
+		csvReader := csv.NewReader(mockCSVData())
+		_, err := csvparser.Parse(csvReader, &v)
 		require.Error(t, err, csvparser.ErrCSVRowMustBeAStruct)
 	})
 
 	t1.Run("should return error if v is a string", func(t *testing.T) {
-		csvReader := csv.NewReader(mockCSVData)
+		csvReader := csv.NewReader(mockCSVData())
 		res, err := csvparser.Parse(csvReader, "some string")
 		fmt.Println(res)
 		require.Error(t, err, csvparser.ErrCSVRowMustBeAStruct)
@@ -60,14 +58,13 @@ func TestParse(t1 *testing.T) {
 	t1.Run("should return error if v is an invalid value", func(t *testing.T) {
 		var c any
 
-		csvReader := csv.NewReader(mockCSVData)
-		res, err := csvparser.Parse(csvReader, c)
-		fmt.Println(res)
+		csvReader := csv.NewReader(mockCSVData())
+		_, err := csvparser.Parse(csvReader, c)
 		require.Error(t, err, csvparser.ErrCSVRowHasInvalidValue)
 	})
 
 	t1.Run("should return error if v is set to nil", func(t *testing.T) {
-		csvReader := csv.NewReader(mockCSVData)
+		csvReader := csv.NewReader(mockCSVData())
 		_, err := csvparser.Parse[any](csvReader, nil)
 		require.Error(t, err, csvparser.ErrCSVRowHasInvalidValue)
 	})

@@ -1,10 +1,15 @@
 package csvparser_test
 
-import "strings"
+import (
+	"io"
+	"strings"
+)
 
-var mockCSVData = strings.NewReader(`name,age,gender
+func mockCSVData() io.Reader {
+	return strings.NewReader(`name,age,gender
 john,30,male
 Rob,40,male
 victoria,25,female
 lizzy,,
 alicia,,female`)
+}

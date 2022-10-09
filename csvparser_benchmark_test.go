@@ -4,14 +4,11 @@ import (
 	"encoding/csv"
 	"fmt"
 	"github.com/rayhaanbhikha/csvparser"
-	"os"
 	"testing"
 )
 
 func BenchmarkParse(b *testing.B) {
-	file, _ := os.Open("./data/sample_csv")
-
-	csvReader := csv.NewReader(file)
+	csvReader := csv.NewReader(mockCSVData())
 
 	type Row struct {
 		Name   string  `csv_header:"name"`

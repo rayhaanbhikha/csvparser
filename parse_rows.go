@@ -19,14 +19,14 @@ package csvparser
 //			continue
 //		}
 //
-//		csvRowPtr, err := parseRow(csvRowType, csvHeaders, row)
+//		csvRowPtr, err := parseRow(csvRowMapper, csvHeaders, row)
 //		if err != nil {
 //			return nil, err
 //		}
 //
 //		v, ok := csvRowPtr.Elem().Interface().(T)
 //		if !ok {
-//			return nil, fmt.Errorf("failed to map csvRow to type %T", csvRowType)
+//			return nil, fmt.Errorf("failed to map csvRow to type %T", csvRowMapper)
 //		}
 //
 //		csvRows = append(csvRows, v)
