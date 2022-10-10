@@ -14,7 +14,6 @@ func pointy[T any](val T) *T {
 	return &val
 }
 
-// FIXME: use strings.NewReader instead of opening files.
 func TestParse(t1 *testing.T) {
 
 	t1.Run("should return expected rows", func(t *testing.T) {
@@ -38,7 +37,7 @@ func TestParse(t1 *testing.T) {
 		assert.ElementsMatch(t, expected, got)
 	})
 
-	t1.Run("should return expected rows", func(t *testing.T) {
+	t1.Run("should return expected rows when v is a pointer", func(t *testing.T) {
 
 		type Row struct {
 			Name   string  `csv_header:"name"`
@@ -61,7 +60,7 @@ func TestParse(t1 *testing.T) {
 		assert.ElementsMatch(t, expected, got)
 	})
 
-	t1.Run("should return expected rows", func(t *testing.T) {
+	t1.Run("should return expected rows when using parseChan", func(t *testing.T) {
 
 		type Row struct {
 			Name   string  `csv_header:"name"`
@@ -97,7 +96,7 @@ func TestParse(t1 *testing.T) {
 		require.Error(t, err, csvparser.ErrCSVRowMustBeAStruct)
 	})
 
-	t1.Run("should return error if v is an empty interface", func(t *testing.T) {
+	t1.Run("should return error if v is an empty pointer interface", func(t *testing.T) {
 		var v any
 		csvReader := csv.NewReader(mockCSVData())
 		_, err := csvparser.Parse(csvReader, &v)

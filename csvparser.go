@@ -23,13 +23,13 @@ type ParseChanResult[T any] struct {
 	Error error
 }
 
-func ParseChan[T any](csvReader *csv.Reader, csvRowMapping T) <-chan ParseChanResult[T] {
+func ParseChan[T any](csvReader *csv.Reader, v T) <-chan ParseChanResult[T] {
 	resultChan := make(chan ParseChanResult[T])
 
 	go func() {
 		defer close(resultChan)
-		rowMappingVal := reflect.ValueOf(csvRowMapping)
-		isPointer := rowMappingVal.Kind() == reflect.Pointer
+		rv := reflect.ValueOf(v)
+		isPointer := rv.Kind() == reflect.Pointer
 
 		csvHeaders, err := newCSVHeaders(csvReader)
 		if err == io.EOF {
@@ -42,7 +42,7 @@ func ParseChan[T any](csvReader *csv.Reader, csvRowMapping T) <-chan ParseChanRe
 			return
 		}
 
-		csvRowMapper, err := rowMapper(rowMappingVal, csvHeaders)
+		csvRowMapper, err := rowMapper(rv, csvHeaders)
 		if err != nil {
 			resultChan <- ParseChanResult[T]{
 				Error: err,
@@ -62,16 +62,16 @@ func ParseChan[T any](csvReader *csv.Reader, csvRowMapping T) <-chan ParseChanRe
 				continue
 			}
 
-			csvRowPtr := csvRowMapper.generate(row)
+			mappedCSVRowPtr := csvRowMapper.generate(row)
 
 			if !isPointer {
-				csvRowPtr = csvRowPtr.Elem()
+				mappedCSVRowPtr = mappedCSVRowPtr.Elem()
 			}
 
-			v, ok := csvRowPtr.Interface().(T)
+			v, ok := mappedCSVRowPtr.Interface().(T)
 			if !ok {
 				resultChan <- ParseChanResult[T]{
-					Error: fmt.Errorf("failed to map from %T to %T", csvRowPtr.Elem().Interface(), rowMappingVal.Type()),
+					Error: fmt.Errorf("failed to map from %T to %T", mappedCSVRowPtr.Interface(), rv.Type()),
 				}
 				continue
 			}
