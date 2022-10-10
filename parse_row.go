@@ -26,27 +26,14 @@ func (c *csvRowMapper) generate(row []string) reflect.Value {
 
 	for i, csvRowIndex := range c.fields {
 		csvRowPtrField := csvRowPtr.Elem().Field(i)
+		if csvRowIndex >= len(row) {
+			continue
+		}
 		colVal := row[csvRowIndex]
 		setVal(&csvRowPtrField, colVal)
 	}
 
 	return csvRowPtr
-}
-
-func setVal[T any](rv *reflect.Value, actualVal T) {
-	val := reflect.ValueOf(actualVal)
-	if !rv.CanSet() {
-		return
-	}
-
-	if rv.Kind() == reflect.Pointer {
-		if val.IsZero() {
-			return
-		}
-		rv.Set(reflect.ValueOf(&actualVal))
-		return
-	}
-	rv.Set(val)
 }
 
 func rowMapper(rowVal reflect.Value, headers *csvHeaders) (*csvRowMapper, error) {

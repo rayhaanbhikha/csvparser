@@ -60,6 +60,20 @@ func TestParse(t1 *testing.T) {
 		assert.ElementsMatch(t, expected, got)
 	})
 
+	t1.Run("should return expected error when extra column in csv row", func(t *testing.T) {
+
+		type Row struct {
+			Name   string  `csv_header:"name"`
+			Age    *string `csv_header:"age"`
+			Gender string  `csv_header:"gender"`
+		}
+
+		csvReader := csv.NewReader(mockCorruptedRowCSVData())
+		got, err := csvparser.Parse[*Row](csvReader, &Row{})
+		require.Error(t, err)
+		assert.ElementsMatch(t, []*Row{}, got)
+	})
+
 	t1.Run("should return expected rows when using parseChan", func(t *testing.T) {
 
 		type Row struct {

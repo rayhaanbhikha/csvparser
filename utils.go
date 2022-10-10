@@ -26,3 +26,19 @@ func extractStruct(val reflect.Value) (reflect.Value, error) {
 		return reflect.Value{}, ErrCSVRowMustBeAStruct
 	}
 }
+
+func setVal[T any](rv *reflect.Value, actualVal T) {
+	val := reflect.ValueOf(actualVal)
+	if !rv.CanSet() {
+		return
+	}
+
+	if rv.Kind() == reflect.Pointer {
+		if val.IsZero() {
+			return
+		}
+		rv.Set(reflect.ValueOf(&actualVal))
+		return
+	}
+	rv.Set(val)
+}
